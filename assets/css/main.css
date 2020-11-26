@@ -1,4 +1,4 @@
-@charset "UTF-8";
+﻿@charset "UTF-8";
 @import url(font-awesome.min.css);
 @import "https://fonts.googleapis.com/css?family=Raleway:100,300,600";
 
@@ -3035,7 +3035,7 @@ h12{
 	#banner {
 		background: #000000;
 		padding: 8em 0 4em 0;
-		background-image: url('https://github.com/yunuyean/yunuyean.github.io/blob/master/wallhaven-4x871z.jpg?raw=true');
+		background-image: url('https://github.com/yunuyean/yunuyean.github.io/blob/master/DATA02/geo_background.jpg?raw=true');
 		background-size: cover;
 		background-repeat: no-repeat;
 		background-position: top;
@@ -3250,7 +3250,7 @@ x{
 	
 	background: #000000;
 	
-	background-image: url('https://github.com/yunuyean/yunuyean.github.io/blob/master/wallhaven-4x871z.jpg?raw=true');
+	background-image: url('https://github.com/yunuyean/yunuyean.github.io/blob/master/DATA02/geo_background.jpg?raw=true');
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: top;
@@ -3323,7 +3323,7 @@ x{
 #footer4{
 	
 	background: #161616;
-	background-image: url('https://github.com/yunuyean/yunuyean.github.io/blob/master/wallhaven-4x871z.jpg?raw=true');
+	background-image: url('https://github.com/yunuyean/yunuyean.github.io/blob/master/DATA02/geo_background.jpg?raw=true');
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: top;
@@ -3396,7 +3396,7 @@ x{
 #footer2{
 	
 	background: #000000;
-	background-image: url('https://github.com/yunuyean/yunuyean.github.io/blob/master/wallhaven-4x871z.jpg?raw=true');
+	background-image: url('https://github.com/yunuyean/yunuyean.github.io/blob/master/DATA02/geo_background.jpg?raw=true');
 	background-size: cover;
 	background-repeat: no-repeat;
 	background-position: top;
