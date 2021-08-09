@@ -1,0 +1,239 @@
+import os
+import sys
+import cv2
+import math
+import matplotlib.pyplot as plt
+import numpy as np
+from urllib import request
+import urllib.request
+import pandas as pd
+from datetime import date, timedelta
+from sklearn.cluster import KMeans
+
+def realtime_image(url):
+    resp = urllib.request.urlopen(url)
+    image = np.asarray(bytearray(resp.read()), dtype='uint8')
+    image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = cv2.resize(image , dsize=(1024, 1024), interpolation=cv2.INTER_AREA)
+    return image
+
+def noise_cancelling(img, a, b, c, d):
+    cancelled_img = cv2.fastNlMeansDenoisingColored(img, None, a, b, c, d)
+    return cancelled_img
+
+def convert2binary(img):
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    binary_img = cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                       cv2.THRESH_BINARY_INV, 131, 15)
+    return binary_img 
+
+def drawPlt(img, size):
+    plt.rcParams["figure.figsize"] = (size, size)
+    imgplot = plt.imshow(img)
+    plt.tight_layout()
+    plt.axis("off")
+    plt.show()
+
+def remove_background(img, a1, b1, x, y, r):
+    img = img[a1 - r : a1 + r, b1 - r : b1 + r ]
+    img = img[y : y + r * 2, x : x + r * 2]
+    mask = np.full((img.shape[0], img.shape[1]), 0, dtype=np.uint8) 
+    cv2.circle(mask,(r,r), r, (255, 255, 255),-1)
+    fg = cv2.bitwise_or(img, img, mask=mask)
+    mask = cv2.bitwise_not(mask)
+    background = np.full(img.shape, 0, dtype=np.uint8)
+    bk = cv2.bitwise_or(background, background, mask=mask)
+    img = cv2.bitwise_or(fg, bk)
+    return img
+
+def BW2(img):
+    height, weight = (img).shape
+    img = remove_background(img, int(height/2), int(weight/2), 0, 0, int(weight/2.55))
+    newBack = convert2binary(np.zeros((1024, 1024, 3), np.uint8))
+    h, w = img.shape
+    h_back, w_back = newBack.shape
+    l = int((h_back - h)/2)
+    newBack[l : h + l, l : w + l] = img 
+    return newBack
+
+def brightness_down(img, bright):
+    M = np.ones(img.shape, dtype = "uint8") * bright
+    temp = cv2.subtract(img, M)
+    temp = cv2.subtract(temp, M)
+    return temp
+
+def brightness_up(img, bright):
+    M = np.ones(img.shape, dtype = "uint8") * bright
+    temp = cv2.add(img, M)
+    temp = cv2.add(temp, M)
+    return temp
+
+def extractCoronal(image, name):
+    image = noise_cancelling(image, 11, 11, 11, 27)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    #image = brightness_up(image, 100)
+    #image = brightness_down(image, 20)
+    image = image - 15
+    image = BW2(image)
+    #image = brightness_down(image, 110)
+    image = brightness_down(image, 90)
+    plt.rcParams["figure.figsize"] = (18, 18)
+    imgplot = plt.imshow(image)
+    plt.tight_layout()
+    plt.axis("off")
+    #plt.show()
+    plt.savefig(name, bbox_inches='tight', pad_inches=0)
+    # print("DONE --- " , name)
+
+def drawContour(img_ori,name):
+    img = cv2.imread(name)
+    img = cv2.resize(img , dsize=(1024, 1024), interpolation=cv2.INTER_AREA)
+    img2 = img.copy()
+    imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    ret, imthres = cv2.threshold(imgray, 127, 255, cv2.THRESH_BINARY_INV)
+    contour, hierarchy = cv2.findContours(imthres, cv2.RETR_EXTERNAL, \
+                                                    cv2.CHAIN_APPROX_NONE)
+    contour2, hierarchy = cv2.findContours(imthres, cv2.RETR_TREE, \
+                                                cv2.CHAIN_APPROX_SIMPLE)
+    
+    for idx, cont in enumerate(contour2): 
+        cv2.drawContours(img_ori, contour2, idx, (255, 255, 255), 1)
+    cv2.rectangle(img_ori, (700, 900), (1020, 1020), (0, 0, 0), -1)
+    #drawPlt(img_ori, 18)
+    return img_ori
+
+def inputRokaf2Image(image):
+    org = (738, 1002)
+    org2 = (725, 980)
+    org3 = (30, 50)
+    text = "REPUBLIC OF KOREA AIR FORCE"
+    text2 = "SPACE WEATHER TEAM"
+    text3 = "CORONAL HOLE DETECTION"
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.putText(image, text, org, font, 0.5, (255, 255, 255), 1)
+    cv2.putText(image, text2, org2, font, 0.8, (255, 255, 255), 1)
+    cv2.putText(image, text3, org3, font, 1.0, (255, 255, 255), 2)
+    # cv2.rectangle(image, (412, 212), (612, 812), (0, 0, 255), 3)
+    cv2.ellipse(image, (512, 512), (100, 250), 0, 0, 360, (255, 0, 0), 1)
+    return image
+
+def centroid(clt):
+    numLabels = np.arange(0, len(np.unique(clt.labels_)) + 1)
+    (data, _) = np.histogram(clt.labels_, bins=numLabels)
+    data = data.astype("float")
+    data /= data.sum()
+    return data
+
+def BGR2RGB(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return img
+
+def img_reshape(img):
+    img = img.reshape((img.shape[0] * img.shape[1], 3))
+    return img
+
+def printColorData(clt):
+    for center in clt.cluster_centers_:
+        print(center)
+        
+def KNN(k):
+    clt = KMeans(n_clusters = k)
+    return clt
+
+def imageProcessing(img):
+    img2 = img.copy()
+    img2 = BGR2RGB(img2)
+    img2 = img_reshape(img2)
+    return img2
+
+def colorRatios(data, clt):
+    i = 0
+    arr = []
+    for center in clt.cluster_centers_:
+        arr.append([[int(center[0]), int(center[1]), int(center[2])], round(data[i], 4)])
+        i += 1
+    arr.sort()
+    return arr
+
+def calPartArea(img, k):
+    img = imageProcessing(img)
+    clt = KNN(k)
+    clt.fit(img)
+    data = centroid(clt)
+    return colorRatios(data, clt)
+
+def calRedZone(binaryimage):
+    mask = np.zeros_like(binaryimage)
+    rows, cols,_ = mask.shape
+    mask = cv2.ellipse(mask, (512, 512), (100, 250), 0, 0, 360, (255, 255, 255), -1)
+    result = np.bitwise_and(binaryimage, mask)
+    result_rgb = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+    x = calPartArea(result_rgb, 3)
+    return x
+
+def calAreas(binaryimage):
+    nimage = binaryimage[0 : 262, 0 : 1024]
+    mimage = binaryimage[262 : 762, 0 : 1024]
+    simage = binaryimage[762 : 1024, 0 : 1024]
+    
+    n = round(calPartArea(nimage, 2)[0][1] * 262 * 1024 / (math.pi * 409**2), 4)
+    m = round(calPartArea(mimage, 2)[0][1] * 500 * 1024 / (math.pi * 409**2), 4)
+    s = round(calPartArea(simage, 2)[0][1] * 262 * 1024 / (math.pi * 409**2), 4)
+    t = round(n + m + s, 4)
+    r = round((calRedZone(binaryimage)[2][1] * 1024 * 1024) / (math.pi * 409**2), 4)
+    
+    return [n, m, s, t, r]
+
+def get_binaryimage(filename):
+    img = cv2.imread(filename)
+    img = cv2.resize(img , dsize=(1024, 1024), interpolation=cv2.INTER_AREA)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return img
+
+def inputData2image(image, data):
+    org = (30, 80)
+    org2 = (30, 100)
+    org3 = (30, 120)
+    org4 = (30, 140)
+    org5 = (30, 160)
+    
+    text = "Arctic: " + str(data[0])
+    text2 = "Middle: "  + str(data[1])
+    text3 = "Antarctica: " + str(data[2])
+    text4 = "Total: " + str(data[3])
+    text5 = "Red Zone: " + str(data[4])
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    
+    cv2.putText(image, text, org, font, 0.5, (255, 255, 255), 1)
+    cv2.putText(image, text2, org2, font, 0.5, (255, 255, 255), 1)
+    cv2.putText(image, text3, org3, font, 0.5, (255, 255, 255), 1)
+    cv2.putText(image, text4, org4, font, 0.5, (255, 255, 255), 1)
+    cv2.putText(image, text5, org5, font, 0.5, (255, 100, 100), 1)
+    return image
+
+def urlMaker(n):
+    url = 'https://suntoday.lmsal.com/sdomedia/SunInTime/'
+    today = date.today()
+    yesterday = date.today() - timedelta(n)
+    url = url + str(yesterday.strftime('%Y/%m/%d')) + '/'
+    url = url + 'l0193.jpg'
+    return [url, str(yesterday.strftime('%Y%m%d'))]
+
+def running(url):
+    image = realtime_image(url)
+    name = 'RRR2.png'
+    extractCoronal(image, name)
+    bimage = get_binaryimage(name)
+    img = drawContour(image, name)
+    img = inputRokaf2Image(img)
+    img = inputData2image(img, calAreas(bimage))
+    drawPlt(img, 18)
+
+def main():
+    url = "https://suntoday.lmsal.com/sdomedia/SunInTime/2021/08/05/l0193.jpg"
+    running(url)
+    
+if __name__ == "__main__":
+    main()
+    
