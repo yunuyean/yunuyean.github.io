@@ -1,0 +1,75 @@
+import csv
+import pandas as pd
+from datetime import date, timedelta
+from urllib import request
+
+def dateconvert(n):
+    today = date.today()
+    yesterday = date.today() - timedelta(n)
+    return str(yesterday.strftime('%Y%m%d'))
+
+def urlMaker(n):
+    url = 'ftp://ftp.swpc.noaa.gov/pub/lists/ace/'
+    today = date.today()
+    yesterday = date.today() - timedelta(n)
+    temp = str(yesterday.strftime('%Y%m%d'))
+    url = url + str(yesterday.strftime('%Y%m%d'))
+    url = url + '_ace_swepam_1m.txt'
+    return [url, temp]
+
+def download(n):
+    remote_url = urlMaker(n)[0]
+    local_file = 'TEMP/testswepam' + urlMaker(n)[1] + '.txt'
+    request.urlretrieve(remote_url, local_file)
+    print('Done', urlMaker(n)[1])
+    
+def insert2list():
+    date = []
+    year = []
+    month = []
+    day = []
+    time = []
+    DENSITY = []
+    TEMPERATURE = []
+    SPEED = []
+    
+    for i in range(0, 3000):
+        try:
+            download(i)
+            file1 = 'TEMP/testswepam' + dateconvert(i) + '.txt'
+
+            f = open(file1, 'r')
+            lines = f.readlines()
+            for line in lines:
+                if "#" in line or ":" in line:
+                    pass
+                else:
+                    line = line.strip()
+                    line = ' '.join(line.split())
+                    date.append(str(line.split(' ')[1])+str(line.split(' ')[2])+str(line.split(' ')[3]))
+                    DENSITY.append(line.split(' ')[7])
+                    SPEED.append(line.split(' ')[8])
+                    TEMPERATURE.append(float(line.split(' ')[9]))
+            f.close()
+            dict = {'DATE': date, 'DENSITY': DENSITY, 'SPEED': SPEED, 'TEMPERATURE': TEMPERATURE}  
+            df = pd.DataFrame(dict)
+            endname = "SWEPAMDATA/SWEPAM1M" + dateconvert(i) +'.csv'
+            df.to_csv(endname, index = False) 
+            print("DONE --- ", dateconvert(i))
+
+            date = []
+            year = []
+            month = []
+            day = []
+            time = []
+            DENSITY = []
+            TEMPERATURE = []
+            SPEED = []
+        except:
+            print("SAD")
+
+def main():
+    insert2list()
+    
+if __name__ == "__main__":
+    main()
