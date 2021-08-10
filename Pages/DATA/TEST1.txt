@@ -16,3 +16,37 @@ plt.bar(x, y, align='center') # center the bars on their x-values
 plt.title('DateLocator with interval=5')
 plt.gcf().autofmt_xdate()
 plt.show()
+
+
+################
+
+import matplotlib.pyplot as plt
+ 
+## 데이터
+age_category = ['10대 이하', '20대', '30대', '40대', '50대', '60대 이상'] ## 연령 카테고리, x축 눈금에 표시될 라벨
+num_patient = [3,3,5,7,8,9] ## 방문환자수
+ 
+## 시각화
+plt.figure(figsize=(10,10)) ## Figure 생성 사이즈는 10 by 10
+xtick_label_position = list(range(len(age_category))) ## x축 눈금 라벨이 표시될 x좌표
+plt.xticks(xtick_label_position, age_category) ## x축 눈금 라벨 출력
+ 
+## 바 차트 출력, 막대기 색깔을 초록색으로 설정
+plt.bar(xtick_label_position, num_patient, color='green')
+ 
+plt.title('지난달 연령별 방문환자 수',fontsize=20) ## 타이틀 출력
+plt.xlabel('연령') ## x축 라벨 출력
+plt.ylabel('방문환자수') ## y축 라벨 출력
+plt.show()
+
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+x = np.array([0,1,2,3])
+z = np.array([0,1,2,3,4,5])
+y = np.array([20,21,22,23,10,15])
+my_xticks = ['John','Arnold','Mavis','Matt']
+plt.xticks(x, my_xticks)
+plt.plot(z, y)
+plt.show()
